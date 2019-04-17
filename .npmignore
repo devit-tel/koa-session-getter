@@ -1,0 +1,5 @@
+package-lock.json
+tsconfig.json
+tsconfig.release.json
+.gitignore
+.npmignore
