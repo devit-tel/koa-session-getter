@@ -1,6 +1,5 @@
-import url from 'url';
 import axios from 'axios';
-import { get, set, lensPath } from 'ramda';
+import { set, get } from 'lodash'
 
 type Options = {
   url: string;
@@ -10,14 +9,14 @@ type Options = {
 
 var defaultOptions = {
   url: 'https://kong-api.staging.sendit.asia/user/v2/sessions',
-  authorizationPath: ['request', 'headers'],
+  authorizationPath: ['request', 'headers', 'authorization'],
   sessionPath: ['state', 'user'],
 };
 
 export const setOptions = (options: Options) => {
   defaultOptions = { ...defaultOptions, ...options };
-  return defaultOptions
-}
+  return defaultOptions;
+};
 
 export const getSessionMiddleware = (options: Options) => async (
   ctx,
@@ -25,9 +24,9 @@ export const getSessionMiddleware = (options: Options) => async (
 ) => {
   const opts = { ...defaultOptions, ...options };
   try {
-    ctx = set(lensPath(opts.sessionPath), await getSession(ctx, options), ctx);
+    ctx = set(ctx, opts.sessionPath, await getSession(ctx, options));
   } catch (error) {
-    ctx = set(lensPath(opts.sessionPath), { data: null, error }, ctx);
+    ctx = set(ctx, opts.sessionPath, { data: null, error });
   } finally {
     return next();
   }
@@ -38,7 +37,10 @@ export const getSession = async (ctx, options: Options) => {
   try {
     const { data } = await axios({
       method: 'GET',
-      url: url.resolve(opts.url, get(opts.authorizationPath, ctx)),
+      url: opts.url,
+      headers: {
+        authorization: get(ctx, opts.authorizationPath),
+      },
     });
     return data;
   } catch (error) {
