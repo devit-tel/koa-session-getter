@@ -1,33 +1,47 @@
-/**
- * Some predefined delays (in milliseconds).
- */
-export enum Delays {
-  Short = 500,
-  Medium = 2000,
-  Long = 5000,
+import url from 'url';
+import axios from 'axios';
+import { get, set, lensPath } from 'ramda';
+
+type Options = {
+  url: string;
+  authorizationPath: [string];
+  sessionPath: [string];
+};
+
+var defaultOptions = {
+  url: 'https://kong-api.staging.sendit.asia/user/v2/sessions',
+  authorizationPath: ['request', 'headers'],
+  sessionPath: ['state', 'user'],
+};
+
+export const setOptions = (options: Options) => {
+  defaultOptions = { ...defaultOptions, ...options };
+  return defaultOptions
 }
 
-/**
- * Returns a Promise<string> that resolves after given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - Number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-  name: string,
-  delay: number = Delays.Medium,
-): Promise<string> {
-  return new Promise((resolve: (value?: string) => void) =>
-    setTimeout(() => resolve(`Hello, ${name}`), delay),
-  );
-}
+export const getSessionMiddleware = (options: Options) => async (
+  ctx,
+  next: Function,
+) => {
+  const opts = { ...defaultOptions, ...options };
+  try {
+    ctx = set(lensPath(opts.sessionPath), await getSession(ctx, options), ctx);
+  } catch (error) {
+    ctx = set(lensPath(opts.sessionPath), { data: null, error }, ctx);
+  } finally {
+    return next();
+  }
+};
 
-// Below are examples of using TSLint errors suppression
-// Here it is suppressing missing type definitions for greeter function
-
-// tslint:disable-next-line typedef
-export async function greeter(name) {
-  // tslint:disable-next-line no-unsafe-any no-return-await
-  return await delayedHello(name, Delays.Long);
-}
+export const getSession = async (ctx, options: Options) => {
+  const opts = { ...defaultOptions, ...options };
+  try {
+    const { data } = await axios({
+      method: 'GET',
+      url: url.resolve(opts.url, get(opts.authorizationPath, ctx)),
+    });
+    return data;
+  } catch (error) {
+    return { data: null, error };
+  }
+};
