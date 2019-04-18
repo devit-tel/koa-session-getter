@@ -1,4 +1,5 @@
-# conductor-client
+# koa-session-getter
+koa's middleware that parser user infomation to ctx by http (GET), using JWT
 
 ### Install
 
