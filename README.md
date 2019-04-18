@@ -1,5 +1,5 @@
 # koa-session-getter
-koa's middleware that parser user infomation to ctx by http (GET), using JWT
+koa's middleware that get user infomation using JWT by http (GET), and parse to ctx.
 
 ### Install
 
