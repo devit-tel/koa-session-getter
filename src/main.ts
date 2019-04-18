@@ -8,7 +8,7 @@ type Options = {
 };
 
 var defaultOptions = {
-  url: 'https://kong-api.staging.sendit.asia/user/v2/sessions',
+  url: 'http://localhost:3000/v2/sessions',
   authorizationPath: ['request', 'headers', 'authorization'],
   sessionPath: ['state', 'user'],
 };

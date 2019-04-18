@@ -15,7 +15,7 @@ import { getSessionMiddleware } from 'koa-session-getter'
 class SystemController {
   // Overide default options
   @route('/check', HttpMethod.GET, getSessionMiddleware({
-    url: 'https://kong-api.staging.sendit.asia/user/v2/sessions',
+    url: 'http://localhost:3000/v2/sessions',
     authorizationPath: ['request', 'headers', 'authorization'],
     sessionPath: ['state', 'user']
   }))
@@ -40,7 +40,7 @@ import { getSessionMiddleware, setOptions } from 'koa-session-getter'
 
 // Set as default value
 setOptions({
-  url: 'https://kong-api.staging.sendit.asia/user/v2/sessions',
+  url: 'http://localhost:3000/v2/sessions',
   authorizationPath: ['request', 'headers', 'authorization'],
   sessionPath: ['state', 'user']
 })
