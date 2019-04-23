@@ -1,10 +1,7 @@
 {
   "name": "koa-session-getter",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Koa's middleware that fill user seesion",
-  "engines": {
-    "node": ">= 10.13 <11"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/devit-tel/koa-session-getter"
