@@ -18,7 +18,10 @@ class SystemController {
   @route('/check', HttpMethod.GET, getSessionMiddleware({
     url: 'http://localhost:3000/v2/sessions',
     authorizationPath: ['request', 'headers', 'authorization'],
-    sessionPath: ['state', 'user']
+    sessionPath: ['state', 'user'],
+    httpOptions: {
+      timeout: 1000
+    }
   }))
   async check(ctx) {
     ctx.body = {

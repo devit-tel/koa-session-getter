@@ -5,12 +5,14 @@ type Options = {
   url: string;
   authorizationPath: [string];
   sessionPath: [string];
+  httpOptions: any
 };
 
 var defaultOptions = {
   url: 'http://localhost:3000/v2/sessions',
   authorizationPath: ['request', 'headers', 'authorization'],
   sessionPath: ['state', 'user'],
+  httpOptions: {}
 };
 
 export const setOptions = (options: Options) => {
@@ -41,6 +43,7 @@ export const getSession = async (ctx, options: Options) => {
       headers: {
         authorization: get(ctx, opts.authorizationPath),
       },
+      ...opts.httpOptions
     });
     return data;
   } catch (error) {
