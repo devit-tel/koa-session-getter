@@ -68,7 +68,6 @@ const getUserPermissions = (ctx: any, path?: string) => {
   } else {
     company = get(ctx, 'user.data.company')
   }
-  console.log('getUSerPermissions:', path, company)
   const { projectid, roleid } = ctx.request.header // case jwt
   let permissions = []
   Object.keys(company).map(name => {
