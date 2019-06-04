@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from 'axios'
 import { set, get, without, intersection } from 'lodash'
 
 type Options = {
@@ -61,8 +61,14 @@ export const checkJWT = (ctx) => {
   }
 };
 
-const getUserPermissions = (ctx) => {
-  const { company } = ctx.user.data
+const getUserPermissions = (ctx: any, path?: string) => {
+  let company
+  if (path) {
+    company = get(ctx, path)
+  } else {
+    company = get(ctx, 'user.data.company')
+  }
+  console.log('getUSerPermissions:', path, company)
   const { projectid, roleid } = ctx.request.header // case jwt
   let permissions = []
   Object.keys(company).map(name => {
@@ -84,7 +90,7 @@ const getUserPermissions = (ctx) => {
   return permissions
 }
 
-export const hasAnyPermissions = (requiredPermissions: [string]) => async (
+export const hasAnyPermissions = (requiredPermissions: [string], path?: string) => async (
   ctx,
   next: Function,
 ) => {
@@ -99,8 +105,8 @@ export const hasAnyPermissions = (requiredPermissions: [string]) => async (
     }
     return
   }
-  const userPermissions = getUserPermissions(ctx)
-  ctx.user.data.permissions = userPermissions
+  const userPermissions = getUserPermissions(ctx, path)
+  ctx.permissions = userPermissions
   if (without(userPermissions, ...requiredPermissions).length < userPermissions.length) {
     await next()
   } else {
@@ -113,7 +119,7 @@ export const hasAnyPermissions = (requiredPermissions: [string]) => async (
   }
 };
 
-export const hasAllPermissions = (requiredPermissions: [string]) => async (
+export const hasAllPermissions = (requiredPermissions: [string], path?: string) => async (
   ctx,
   next: Function,
 ) => {
@@ -128,7 +134,7 @@ export const hasAllPermissions = (requiredPermissions: [string]) => async (
     }
     return
   }
-  const userPermissions = getUserPermissions(ctx)
+  const userPermissions = getUserPermissions(ctx, path)
   ctx.permissions = userPermissions
   if (intersection(userPermissions, requiredPermissions).length === requiredPermissions.length) {
       await next()
