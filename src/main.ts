@@ -45,7 +45,7 @@ export const getSession = async (ctx, options: Options) => {
       },
       ...opts.httpOptions
     });
-    return data;
+    return get(data, 'data');
   } catch (error) {
     return { data: null, error };
   }
