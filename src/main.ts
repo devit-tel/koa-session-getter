@@ -28,7 +28,7 @@ export const getSessionMiddleware = (options: Options) => async (
   try {
     ctx = set(ctx, opts.sessionPath, await getSession(ctx, options));
   } catch (error) {
-    ctx = set(ctx, opts.sessionPath, { data: null, error });
+    ctx = set(ctx, opts.sessionPath, { error });
   } finally {
     return next();
   }
@@ -66,7 +66,7 @@ const getUserPermissions = (ctx: any, path?: string) => {
   if (path) {
     company = get(ctx, path)
   } else {
-    company = get(ctx, 'user.data.company')
+    company = get(ctx, 'user.company')
   }
   const { projectid, roleid } = ctx.request.header // case jwt
   let permissions = []
