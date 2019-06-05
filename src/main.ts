@@ -51,10 +51,12 @@ export const getSession = async (ctx, options: Options) => {
   }
 };
 
-export const checkJWT = (ctx) => {
-  if (get(ctx, 'user.data.sessionType') === 'jwt') {
-    const { projectid, roleid } = ctx.request.header // case jwt
-    if (projectid || roleid) {
+export const checkJWT = (ctx: any, path?: string) => {
+  const sessionType = path ? get(ctx, `${path}.sessionType`) : get(ctx, 'user.sessionType')
+  if (sessionType === 'jwt') {
+    const projectId = get(ctx, 'request.header.project-id')
+    const roleId = get(ctx, 'request.header.role-id')
+    if (projectId || roleId) {
     } else {
       throw new Error()
     }
@@ -62,20 +64,20 @@ export const checkJWT = (ctx) => {
 };
 
 const getUserPermissions = (ctx: any, path?: string) => {
-  let company
-  if (path) {
-    company = get(ctx, path)
-  } else {
-    company = get(ctx, 'user.company')
-  }
-  const { projectid, roleid } = ctx.request.header // case jwt
+  const company = path ? get(ctx, `${path}.company`) : get(ctx, 'user.company')
+  const projectId = get(ctx, 'request.header.project-id') || get(ctx, 'header.project-id')
+  const roleId = get(ctx, 'request.header.role-id') || get(ctx, 'header.role-id')
   let permissions = []
   Object.keys(company).map(name => {
     Object.keys(company[name].project).map(projName => {
-      if (projectid && company[name].project[projName]._id !== projectid) return 
+      if (projectId) {
+        if (company[name].project[projName]._id !== projectId) return 
+      }
       if (company[name].project[projName].role) {
         Object.keys(company[name].project[projName].role).map(roleName => {
-          if (roleid && company[name].project[projName].role[roleName]._id !== roleid) return 
+          if (roleId) {
+            if (company[name].project[projName].role[roleName]._id !== roleId) return 
+          }
           permissions = permissions.concat(company[name].project[projName].role[roleName].permissions)
         })
       }
@@ -94,7 +96,7 @@ export const hasAnyPermissions = (requiredPermissions: [string], path?: string) 
   next: Function,
 ) => {
   try {
-    checkJWT(ctx)
+    checkJWT(ctx, path)
   } catch (err) {
     ctx.status = 400
     ctx.body = {
@@ -104,9 +106,7 @@ export const hasAnyPermissions = (requiredPermissions: [string], path?: string) 
     }
     return
   }
-  const userPermissions = getUserPermissions(ctx, path)
-  ctx.permissions = userPermissions
-  if (without(userPermissions, ...requiredPermissions).length < userPermissions.length) {
+  if (hasAnyPermissionsBool(ctx, requiredPermissions, path)) {
     await next()
   } else {
     ctx.status = 401
@@ -123,7 +123,7 @@ export const hasAllPermissions = (requiredPermissions: [string], path?: string) 
   next: Function,
 ) => {
   try {
-    checkJWT(ctx)
+    checkJWT(ctx, path)
   } catch (err) {
     ctx.status = 400
     ctx.body = {
@@ -133,10 +133,8 @@ export const hasAllPermissions = (requiredPermissions: [string], path?: string) 
     }
     return
   }
-  const userPermissions = getUserPermissions(ctx, path)
-  ctx.permissions = userPermissions
-  if (intersection(userPermissions, requiredPermissions).length === requiredPermissions.length) {
-      await next()
+  if (hasAllPermissionBool(ctx, requiredPermissions, path)) {
+    await next()
   } else {
     ctx.status = 401
     ctx.body = {
@@ -145,4 +143,15 @@ export const hasAllPermissions = (requiredPermissions: [string], path?: string) 
       message: 'Unauthorized',
     }
   }
+}
+
+export const hasAnyPermissionsBool = (ctx: any, requiredPermissions: [string], path?: string) => {
+  const userPermissions = getUserPermissions(ctx, path)
+  
+  return without(userPermissions, ...requiredPermissions).length < userPermissions.length
+}
+export const hasAllPermissionBool = (ctx: any, requiredPermissions: [string], path?: string) => {
+  const userPermissions = getUserPermissions(ctx, path)
+
+  return intersection(userPermissions, requiredPermissions).length === requiredPermissions.length
 }
