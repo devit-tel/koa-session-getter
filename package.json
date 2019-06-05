@@ -1,6 +1,6 @@
 {
   "name": "koa-session-getter",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Koa's middleware that fill user seesion",
   "repository": {
     "type": "git",
