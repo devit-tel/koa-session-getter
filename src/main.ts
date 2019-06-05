@@ -47,6 +47,7 @@ export const getSession = async (ctx, options: Options) => {
       },
       ...opts.httpOptions
     });
+
     return get(data, 'data');
   } catch (error) {
     const token = get(get(ctx, opts.authorizationPath).split(' '), '1')
@@ -66,6 +67,7 @@ export const getSession = async (ctx, options: Options) => {
       user:  get(data, 'data'),
       userId: get(data, 'data._id')
     }
+
     return { data: response }
   }
 };
@@ -87,26 +89,31 @@ const getUserPermissions = (ctx: any, path?: string) => {
   const projectId = get(ctx, 'request.header.project-id') || get(ctx, 'header.project-id')
   const roleId = get(ctx, 'request.header.role-id') || get(ctx, 'header.role-id')
   let permissions = []
-  Object.keys(company).map(name => {
-    Object.keys(company[name].project).map(projName => {
+  company.map((companyObj: any) => {
+    companyObj.project.map((projectObj: any) => {
       if (projectId) {
-        if (company[name].project[projName]._id !== projectId) return 
+        if (projectObj._id !== projectId) {
+          return
+        }
       }
-      if (company[name].project[projName].role) {
-        Object.keys(company[name].project[projName].role).map(roleName => {
+      if (projectObj.role && projectObj.role.length > 0) {
+        projectObj.role.map((roleObj: any) => {
           if (roleId) {
-            if (company[name].project[projName].role[roleName]._id !== roleId) return 
+            if (roleObj._id !== roleId) {
+              return
+            }
           }
-          permissions = permissions.concat(company[name].project[projName].role[roleName].permissions)
+          permissions = permissions.concat(roleObj.permissions)
         })
       }
-      if (company[name].project[projName].appName) {
-        Object.keys(company[name].project[projName].appName).map(appName => {
-          permissions = permissions.concat(company[name].project[projName].appName[appName].permissions)
+      if (projectObj.app && projectObj.app.length > 0) {
+        projectObj.app.map(appObj => {
+          permissions = permissions.concat(appObj.permissions)
         })
       }
     })
   })
+
   return permissions
 }
 
@@ -123,6 +130,7 @@ export const hasAnyPermissions = (requiredPermissions: [string], path?: string) 
       error: 'Missing header projectId or roleId',
       message: 'Authorization header is type JWT',
     }
+
     return
   }
   if (hasAnyPermissionsBool(ctx, requiredPermissions, path)) {
@@ -150,6 +158,7 @@ export const hasAllPermissions = (requiredPermissions: [string], path?: string) 
       error: 'Missing header projectId or roleId for authorization type JWT',
       message: 'Missing header projectId or roleId for authorization type JWT',
     }
+
     return
   }
   if (hasAllPermissionBool(ctx, requiredPermissions, path)) {
