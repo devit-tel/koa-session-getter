@@ -52,22 +52,14 @@ export const getSession = async (ctx, options: Options) => {
       method: 'GET',
       url: opts.url,
       headers: {
-        authorization: get(ctx, opts.authorizationPath)
+        authorization: get(ctx, opts.authorizationPath),
+        ['project-id']: getProjectId(ctx),
+        ['role-id']: getRoleId(ctx)
       },
       ...opts.httpOptions
     });
 
-    const result = get(data, 'data')
-    const projectId = getProjectId(ctx)
-    const roleId = getRoleId(ctx)
-    if (projectId) {
-      result.currentProjectId = result.company.find(c => c.project.find(p => p._id + '' === projectId + '')) ? projectId : undefined
-    }
-    if (roleId) {
-      result.currentRoleId = result.company.find(c => c.project.find(p => p.role.find(r => r._id + '' === roleId + ''))) ? roleId : undefined
-    }
-
-    return result
+    return get(data, 'data')
   } catch (error) {
     const token = get(get(ctx, opts.authorizationPath).split(' '), '1')
     const decoded = decode(token)
