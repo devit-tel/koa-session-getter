@@ -17,6 +17,14 @@ var defaultOptions = {
   httpOptions: {}
 };
 
+const getProjectId = (ctx: any) => {
+  return get(ctx, 'request.header.project-id') || get(ctx, 'header.project-id')
+}
+
+const getRoleId = (ctx: any) => {
+  return get(ctx, 'request.header.role-id') || get(ctx, 'header.role-id')
+}
+
 export const setOptions = (options: Options) => {
   defaultOptions = { ...defaultOptions, ...options };
   return defaultOptions;
@@ -32,6 +40,7 @@ export const getSessionMiddleware = (options: Options) => async (
   } catch (error) {
     ctx = set(ctx, opts.sessionPath, { error });
   } finally {
+
     return next();
   }
 };
@@ -43,40 +52,49 @@ export const getSession = async (ctx, options: Options) => {
       method: 'GET',
       url: opts.url,
       headers: {
-        authorization: get(ctx, opts.authorizationPath),
+        authorization: get(ctx, opts.authorizationPath)
       },
       ...opts.httpOptions
     });
 
-    return get(data, 'data');
+    const result = get(data, 'data')
+    const projectId = getProjectId(ctx)
+    const roleId = getRoleId(ctx)
+    if (projectId) {
+      result.currentProjectId = result.company.find(c => c.project.find(p => p._id + '' === projectId + '')) ? projectId : undefined
+    }
+    if (roleId) {
+      result.currentRoleId = result.company.find(c => c.project.find(p => p.role.find(r => r._id + '' === roleId + ''))) ? roleId : undefined
+    }
+
+    return result
   } catch (error) {
     const token = get(get(ctx, opts.authorizationPath).split(' '), '1')
     const decoded = decode(token)
     const { userId } = decoded
     if (!userId) {
-      return { data: null, error };
+      return error;
     }
     const { data } = await axios({
         method: 'GET',
         url: `${opts.userUrl}/${userId}`,
         ...opts.httpOptions
     }).catch(() => {
-      return { data: null, error };
+      return error
     })
-    const response = {
+
+    return {
       user:  get(data, 'data'),
       userId: get(data, 'data._id')
     }
-
-    return { data: response }
   }
 };
 
 export const checkJWT = (ctx: any, path?: string) => {
   const sessionType = path ? get(ctx, `${path}.sessionType`) : get(ctx, 'user.sessionType')
   if (sessionType === 'jwt') {
-    const projectId = get(ctx, 'request.header.project-id')
-    const roleId = get(ctx, 'request.header.role-id')
+    const projectId = getProjectId(ctx)
+    const roleId = getRoleId(ctx)
     if (projectId || roleId) {
     } else {
       throw new Error()
@@ -86,8 +104,8 @@ export const checkJWT = (ctx: any, path?: string) => {
 
 const getUserPermissions = (ctx: any, path?: string) => {
   const company = path ? get(ctx, `${path}.company`) : get(ctx, 'user.company')
-  const projectId = get(ctx, 'request.header.project-id') || get(ctx, 'header.project-id')
-  const roleId = get(ctx, 'request.header.role-id') || get(ctx, 'header.role-id')
+  const projectId = getProjectId(ctx)
+  const roleId = getRoleId(ctx)
   let permissions = []
   company.map((companyObj: any) => {
     companyObj.project.map((projectObj: any) => {
