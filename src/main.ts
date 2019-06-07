@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { set, get, without, intersection } from 'lodash'
-import { decode } from 'jsonwebtoken'
 
 type Options = {
   url: string;
@@ -11,7 +10,6 @@ type Options = {
 
 var defaultOptions = {
   url: 'http://localhost:3000/v2/sessions',
-  userUrl: 'http://localhost:3000/v1/users',
   authorizationPath: ['request', 'headers', 'authorization'],
   sessionPath: ['state', 'user'],
   httpOptions: {}
@@ -61,24 +59,7 @@ export const getSession = async (ctx, options: Options) => {
 
     return get(data, 'data')
   } catch (error) {
-    const token = get(get(ctx, opts.authorizationPath).split(' '), '1')
-    const decoded = decode(token)
-    const { userId } = decoded
-    if (!userId) {
-      return error;
-    }
-    const { data } = await axios({
-        method: 'GET',
-        url: `${opts.userUrl}/${userId}`,
-        ...opts.httpOptions
-    }).catch(() => {
-      return error
-    })
-
-    return {
-      user:  get(data, 'data'),
-      userId: get(data, 'data._id')
-    }
+    return error;
   }
 };
 
