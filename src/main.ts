@@ -16,11 +16,11 @@ var defaultOptions = {
 };
 
 const getProjectId = (ctx: any) => {
-  return get(ctx, 'request.header.project-id') || get(ctx, 'header.project-id')
+  return get(ctx, 'request.headers.project-id') || get(ctx, 'headers.project-id')
 }
 
 const getRoleId = (ctx: any) => {
-  return get(ctx, 'request.header.role-id') || get(ctx, 'header.role-id')
+  return get(ctx, 'request.headers.role-id') || get(ctx, 'headers.role-id')
 }
 
 export const setOptions = (options: Options) => {
