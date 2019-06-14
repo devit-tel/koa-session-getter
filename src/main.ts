@@ -25,6 +25,7 @@ const getRoleId = (ctx: any) => {
 
 export const setOptions = (options: Options) => {
   defaultOptions = { ...defaultOptions, ...options };
+
   return defaultOptions;
 };
 
@@ -43,20 +44,28 @@ export const getSessionMiddleware = (options: Options) => async (
   }
 };
 
-export const getSession = async (ctx, options: Options) => {
-  const opts = { ...defaultOptions, ...options };
+export const getSession = async (ctx: any, options: Options) => {
+  const opts = { ...defaultOptions, ...options }
+  const userHeaders = {
+      ['project-id']: getProjectId(ctx),
+      ['role-id']: getRoleId(ctx)
+  }
+  if (!getProjectId(ctx)) {
+    delete userHeaders['project-id'];
+  }
+  if (!getRoleId(ctx)) {
+    delete userHeaders['role-id'];
+  }
   try {
     const { data } = await axios({
       method: 'GET',
       url: opts.url,
       headers: {
-        authorization: get(ctx, opts.authorizationPath),
-        ['project-id']: getProjectId(ctx),
-        ['role-id']: getRoleId(ctx)
+        authorization: get(ctx,  opts.authorizationPath),
+        ...userHeaders,
       },
       ...opts.httpOptions
-    });
-
+    })
     return get(data, 'data')
   } catch (error) {
     return error;
