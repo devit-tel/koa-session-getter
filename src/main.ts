@@ -85,19 +85,19 @@ export const checkJWT = (ctx: any, path?: string) => {
 };
 
 const getUserPermissions = (ctx: any, path?: string) => {
-  const company = path ? get(ctx, `${path}.company`) : get(ctx, 'user.company')
+  const company = path ? get(ctx, `${path}.company`, []) : get(ctx, 'user.company', [])
   const projectId = getProjectId(ctx)
   const roleId = getRoleId(ctx)
   let permissions = []
   company.map((companyObj: any) => {
-    companyObj.project.map((projectObj: any) => {
+    get(companyObj, 'project', []).map((projectObj: any) => {
       if (projectId) {
         if (projectObj._id !== projectId) {
           return
         }
       }
       if (projectObj.role && projectObj.role.length > 0) {
-        projectObj.role.map((roleObj: any) => {
+        get(projectObj, 'role', []).map((roleObj: any) => {
           if (roleId) {
             if (roleObj._id !== roleId) {
               return
@@ -107,7 +107,7 @@ const getUserPermissions = (ctx: any, path?: string) => {
         })
       }
       if (projectObj.app && projectObj.app.length > 0) {
-        projectObj.app.map(appObj => {
+        get(projectObj, 'app', []).map(appObj => {
           permissions = permissions.concat(appObj.permissions)
         })
       }
