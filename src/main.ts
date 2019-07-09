@@ -1,6 +1,29 @@
 import axios from 'axios'
 import { set, get, without, intersection } from 'lodash'
 
+class Unauthorized extends Error {
+  constructor (message) {
+    super(message); // (1)
+    this.statusCode = 401
+    this.name = 'Unauthorized'
+    this.message = message
+  }
+}
+
+class BadRequest extends Error {
+  constructor (message) {
+    super(message); // (1)
+    this.statusCode = 400
+    this.name = 'Bad Request'
+    this.message = message
+  }
+}
+
+export const error = {
+  Unauthorized,
+  BadRequest,
+}
+
 type Options = {
   url: string;
   authorizationPath: [string];
@@ -8,7 +31,7 @@ type Options = {
   httpOptions: any
 };
 
-var defaultOptions = {
+let defaultOptions = {
   url: 'http://localhost:3000/v2/sessions',
   authorizationPath: ['request', 'headers', 'authorization'],
   sessionPath: ['state', 'user'],
@@ -35,11 +58,11 @@ export const getSessionMiddleware = (options: Options) => async (
 ) => {
   const opts = { ...defaultOptions, ...options };
   try {
-    ctx = set(ctx, opts.sessionPath, await getSession(ctx, options));
+    ctx = set(ctx, opts.sessionPath, await getSession(ctx, options))
   } catch (error) {
-    ctx = set(ctx, opts.sessionPath, { error });
+    throw error
+    // ctx = set(ctx, opts.sessionPath, { error });
   } finally {
-
     return next();
   }
 };
@@ -68,7 +91,7 @@ export const getSession = async (ctx: any, options: Options) => {
     })
     return get(data, 'data')
   } catch (error) {
-    return error;
+    throw new Unauthorized('Session not found')
   }
 };
 
@@ -79,7 +102,7 @@ export const checkJWT = (ctx: any, path?: string) => {
     const roleId = getRoleId(ctx)
     if (projectId || roleId) {
     } else {
-      throw new Error()
+      throw new BadRequest('Missing header projectId or roleId for authorization type jwt')
     }
   }
 };
@@ -121,27 +144,11 @@ export const hasAnyPermissions = (requiredPermissions: [string], path?: string) 
   ctx,
   next: Function,
 ) => {
-  try {
-    checkJWT(ctx, path)
-  } catch (err) {
-    ctx.status = 400
-    ctx.body = {
-      statusCode: 400,
-      error: 'Missing header projectId or roleId',
-      message: 'Authorization header is type JWT',
-    }
-
-    return
-  }
+  checkJWT(ctx, path)
   if (hasAnyPermissionsBool(ctx, requiredPermissions, path)) {
     await next()
   } else {
-    ctx.status = 401
-    ctx.body = {
-      statusCode: 401,
-      error: 'Unauthorized',
-      message: 'Unauthorized',
-    }
+    throw new Unauthorized('Permission denied')
   }
 };
 
@@ -149,27 +156,11 @@ export const hasAllPermissions = (requiredPermissions: [string], path?: string) 
   ctx,
   next: Function,
 ) => {
-  try {
-    checkJWT(ctx, path)
-  } catch (err) {
-    ctx.status = 400
-    ctx.body = {
-      statusCode: 400,
-      error: 'Missing header projectId or roleId for authorization type JWT',
-      message: 'Missing header projectId or roleId for authorization type JWT',
-    }
-
-    return
-  }
+  checkJWT(ctx, path)
   if (hasAllPermissionBool(ctx, requiredPermissions, path)) {
     await next()
   } else {
-    ctx.status = 401
-    ctx.body = {
-      statusCode: 401,
-      error: 'Unauthorized',
-      message: 'Unauthorized',
-    }
+    throw new Unauthorized('Permission denied')
   }
 }
 
